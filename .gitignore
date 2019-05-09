@@ -1,0 +1,8 @@
+local*
+*.swp
+*logdir*
+*__pycache__
+*.pyc
+results*
+.ipynb_checkpoints
+data
