@@ -55,7 +55,6 @@ def main(hps):
             manipulator.append(z[i][0] - z[i][1])
 
         times = []
-        scales = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         for i in range(1,50):
             for j, dec_eps in enumerate(epsilon):
                 feed_dict[dec_eps] = np.expand_dims(z[j][1] + i/50*manipulator[j], axis=0)
@@ -65,23 +64,8 @@ def main(hps):
             img = Image.fromarray(gen_imgs[0])
             img.save("demo/pairs%s/interpolation_%s.png"%(pair, i))
 
-            latent = [latent[0] + np.random.normal(scale=scales[i//8], size=latent[0].shape) for latent in z]
-            latent[-1] = z[-1][0]
-            for j, dec_eps in enumerate(epsilon):
-                feed_dict[dec_eps] = np.expand_dims(latent[j], axis=0)
-            gen_imgs = sess.run(gen_x, feed_dict)
-            img = Image.fromarray(gen_imgs[0])
-            img.save("demo/%s/perturbations_scale_%s_sample_%s.png"%(filenames[0], i//8, i%8))
-
-            latent = [latent[1] + np.random.normal(scale=scales[i//8], size=latent[1].shape) for latent in z]
-            latent[-1] = z[-1][1]
-            for j, dec_eps in enumerate(epsilon):
-                feed_dict[dec_eps] = np.expand_dims(latent[j], axis=0)
-            gen_imgs = sess.run(gen_x, feed_dict)
-            img = Image.fromarray(gen_imgs[0])
-            img.save("demo/%s/perturbations_scale_%s_sample_%s.png"%(filenames[1], i//8, i%8))
-            print(i)
-        print(np.mean(times[-10:]))
+        # We need warm start, therefore only calculate the average of last 10 runs
+        print("The average duration of generating one 256x256 image: %s" % np.mean(times[-10:]))
 
 
 if __name__ == "__main__":
