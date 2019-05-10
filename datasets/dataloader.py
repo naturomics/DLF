@@ -90,14 +90,21 @@ class DataLoader(object):
             if self.rank is not None:
                 files = files.shard(self.shards, self.rank)
 
-            dataset = files.apply(tf.data.experimental.parallel_interleave(
-                tf.data.TFRecordDataset, cycle_length=self.threads_fmap))
+            try:
+                dataset = files.apply(tf.data.experimental.parallel_interleave(
+                                      tf.data.TFRecordDataset, cycle_length=self.threads_fmap))
+            except ImportError:
+                dataset = files.apply(tf.contrib.data.parallel_interleave(
+                                      tf.data.TFRecordDataset, cycle_length=self.threads_fmap))
             if mode == "train":
                 dataset = dataset.shuffle(buffer_size=16*batch_size)
             dataset = dataset.repeat(1)
-            dataset = dataset.apply(tf.data.experimental.map_and_batch(self.parser,
-                                                                       batch_size=batch_size,
-                                                                       num_parallel_calls=self.threads_dmap))
+            try:
+                dataset = dataset.apply(tf.data.experimental.map_and_batch(self.parser, batch_size=batch_size,
+                                                                           num_parallel_calls=self.threads_dmap))
+            except:
+                dataset = dataset.apply(tf.contrib.data.map_and_batch(self.parser, batch_size=batch_size,
+                                                                      num_parallel_batches=self.threads_dmap))
             dataset = dataset.prefetch(buffer_size=2*batch_size)
             iterator = dataset.make_initializable_iterator()
 

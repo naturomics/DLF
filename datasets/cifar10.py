@@ -24,7 +24,10 @@ from datasets.dataloader import DataLoader
 import tensorflow as tf
 from datasets.utils import maybe_download_and_extract
 from datasets.utils import int64_feature, bytes_feature
-from tensorflow.python.keras.datasets.cifar import load_batch
+try:
+    from tensorflow.python.keras.datasets.cifar import load_batch
+except ImportError:
+    from tensorflow.python.keras._impl.keras.datasets.cifar import load_batch
 
 
 def load_cifar10(path, split):
