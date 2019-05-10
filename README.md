@@ -11,6 +11,7 @@ Read our [paper](https://arxiv.org/pdf/1905.03239) for more details.
 
 ## Requirements
 
+ - python3
  - TensorFlow (tested with v1.12)
 
 
