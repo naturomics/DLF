@@ -311,6 +311,8 @@ def get_arguments():
                         help="Depth of network of per flow")
     parser.add_argument("--num_levels", type=int, default=3,
                         help="Number of levels")
+    parser.add_argument("--affine_coupling", action="store_true",
+                        help="Let h be identity when K=2, where dynamic linear transformation turns out to be affine coupling layer.")
 
     parser.add_argument("--invconv_bias", action='store_true',
                         help="Use bias for invertiable 1x1 convolutions")

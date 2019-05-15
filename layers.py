@@ -60,7 +60,10 @@ def revnet2d_step(inputs, cond, logdet, hps, reverse):
 
             logs = []
             shift = []
-            shift_1, logs_1 = g_0(cond, shape=ops.shape(xs[1]), name="g_0")
+            if hps.affine_coupling and hps.num_parts == 2:
+                logs_1 = shift_1 = tf.zeros_like(xs[0])
+            else:
+                shift_1, logs_1 = g_0(cond, shape=ops.shape(xs[1]), name="g_0")
             logs.append(logs_1)
             # dynamic linear transform
             if hps.decomposition == 0:
@@ -101,7 +104,10 @@ def revnet2d_step(inputs, cond, logdet, hps, reverse):
 
             logs = []
             shift = []
-            shift_1, logs_1 = g_0(cond, shape=ops.shape(ys[1]), name="g_0")
+            if hps.affine_coupling and hps.num_parts == 2:
+                logs_1 = shift_1 = tf.zeros_like(ys[0])
+            else:
+                shift_1, logs_1 = g_0(cond, shape=ops.shape(ys[1]), name="g_0")
             logs.append(logs_1)
             # dynamic linear transform
             if hps.decomposition == 0:
