@@ -85,17 +85,22 @@ class DataLoader(object):
             else:
                 raise ValueError("mode not found! supported modes are " + modes)
 
-            files = tf.data.Dataset.list_files(file_pattern,
-                                               shuffle=True if mode == "train" else False)
+            try:
+                files = tf.data.Dataset.list_files(file_pattern, shuffle=True if mode == "train" else False)
+            except:
+                pass
             if self.rank is not None:
                 files = files.shard(self.shards, self.rank)
 
             try:
                 dataset = files.apply(tf.data.experimental.parallel_interleave(
                                       tf.data.TFRecordDataset, cycle_length=self.threads_fmap))
-            except ImportError:
-                dataset = files.apply(tf.contrib.data.parallel_interleave(
-                                      tf.data.TFRecordDataset, cycle_length=self.threads_fmap))
+            except:
+                try:
+                    dataset = files.apply(tf.contrib.data.parallel_interleave(
+                                          tf.data.TFRecordDataset, cycle_length=self.threads_fmap))
+                except:
+                    dataset = tf.contrib.data.TFRecordDataset(glob(file_pattern))
             if mode == "train":
                 dataset = dataset.shuffle(buffer_size=16*batch_size)
             dataset = dataset.repeat(1)
@@ -103,9 +108,16 @@ class DataLoader(object):
                 dataset = dataset.apply(tf.data.experimental.map_and_batch(self.parser, batch_size=batch_size,
                                                                            num_parallel_calls=self.threads_dmap))
             except:
-                dataset = dataset.apply(tf.contrib.data.map_and_batch(self.parser, batch_size=batch_size,
-                                                                      num_parallel_batches=self.threads_dmap))
-            dataset = dataset.prefetch(buffer_size=2*batch_size)
+                try:
+                    dataset = dataset.apply(tf.contrib.data.map_and_batch(self.parser, batch_size=batch_size,
+                                                                          num_parallel_batches=self.threads_dmap))
+                except:
+                    dataset = dataset.map(self.parser, self.threads_dmap)
+                    dataset = dataset.batch(batch_size)
+            try:
+                dataset = dataset.prefetch(buffer_size=2*batch_size)
+            except:
+                pass
             iterator = dataset.make_initializable_iterator()
 
             if self.next_element is None:
