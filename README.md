@@ -36,11 +36,11 @@ please specify it via `--data_dir` command line or change the default value in `
 mkdir -p data/imagenet{32x32,64x64}/{train,validation}
 tar -xf imagenet-oord-tfr.tar
 
-mv mnt/host/imgenet-oord-tfr/train/*r05*.tfrecords data/imagenet32x32/train
-mv mnt/host/imgenet-oord-tfr/validation/*r05*.tfrecords data/imagenet32x32/validation
+mv mnt/host/imagenet-oord-tfr/train/*r05*.tfrecords data/imagenet32x32/train
+mv mnt/host/imagenet-oord-tfr/validation/*r05*.tfrecords data/imagenet32x32/validation
 
-mv mnt/host/imgenet-oord-tfr/train/*r06*.tfrecords data/imagenet64x64/train
-mv mnt/host/imgenet-oord-tfr/validation/*r06*.tfrecords data/imagenet64x64/validation
+mv mnt/host/imagenet-oord-tfr/train/*r06*.tfrecords data/imagenet64x64/train
+mv mnt/host/imagenet-oord-tfr/validation/*r06*.tfrecords data/imagenet64x64/validation
 ```
 
 - The preprocessed `CelebA 256x256` is from `https://storage.googleapis.com/glow-demo/data/celeba-tfr.tar`. Extract it to folder `data/celeba`, for example:
