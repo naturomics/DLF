@@ -53,7 +53,7 @@ class Model(object):
             inputs = inputs / self.num_bins - 0.5
             inputs = inputs + tf.random_uniform(tf.shape(inputs), 0, 1./self.num_bins)
 
-            objective = tf.zeros(tf.shape(inputs)[0])
+            objective = tf.zeros(self.hps.batch_size)
             objective += -np.log(self.num_bins) * np.prod(ops.shape(inputs)[1:])
             inputs = squeeze2d(inputs)
 
