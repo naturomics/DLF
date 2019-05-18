@@ -105,7 +105,7 @@ class Model(object):
                 eps = [None] * self.hps.num_levels
 
             z = sample(eps=eps[-1])
-            objective = tf.zeros(tf.shape(z)[0])
+            objective = tf.zeros(self.hps.batch_size)
 
         if self.hps.conditioning and condition is None:
             condition = y_onehot
