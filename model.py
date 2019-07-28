@@ -53,7 +53,8 @@ class Model(object):
             inputs = inputs / self.num_bins - 0.5
             inputs = inputs + tf.random_uniform(tf.shape(inputs), 0, 1./self.num_bins)
 
-            objective = tf.zeros(self.hps.batch_size)
+            objective = tf.zeros(tf.shape(inputs)[0])
+
             objective += -np.log(self.num_bins) * np.prod(ops.shape(inputs)[1:])
             inputs = squeeze2d(inputs)
 
@@ -105,7 +106,7 @@ class Model(object):
                 eps = [None] * self.hps.num_levels
 
             z = sample(eps=eps[-1])
-            objective = tf.zeros(self.hps.batch_size)
+            objective = tf.zeros(tf.shape(z)[0])
 
         if self.hps.conditioning and condition is None:
             condition = y_onehot
