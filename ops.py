@@ -300,3 +300,60 @@ def gaussian_diag(mean, logsd):
     o.logp = lambda x: flatten_sum(o.logps(x))
     o.get_eps = lambda x: (x - mean) * tf.exp(-logsd)
     return o
+
+
+def logistic_logpdf(inputs, mean, logs, name="logistic_logpdf"):
+    with tf.variable_scope(name):
+        z = (inputs - mean) * tf.exp(-logs)
+        return z - logs - 2 * tf.nn.softplus(z)
+
+
+def logitic_logcdf(inputs, mean, logs, name="logistic_logcdf"):
+    with tf.variable_scope(name):
+        z = (inputs - mean) * tf.exp(-logs)
+        return tf.log_sigmoid(z)
+
+
+def mixlogistic_logpdf(inputs, prior_logits, means, logs, name="mixlogistic_logpdf"):
+    with tf.variable_scope(name):
+        logpdf = logistic_logpdf(tf.expand_dims(inputs, axis=-1), means, logs)
+        return tf.reduce_logsumexp(tf.nn.log_softmax(prior_logits, axis=-1) + logpdf, axis=-1)
+
+
+def mixlogistic_logcdf(inputs, prior_logits, means, logs, name="mixlogistic_logcdf"):
+    with tf.variable_scope(name):
+        logpdf = logistic_logcdf(tf.expand_dims(inputs, axis=-1), means, logs)
+        return tf.reduce_logsumexp(tf.nn.log_softmax(prior_logits, axis=-1) + logpdf, axis=-1)
+
+
+def assert_in_range(x, min_value, max_value):
+    return tf.Assert(tf.logical_and(tf.greater_equal(tf.reduce_min(x), min_value),
+                     tf.less_equal(tf.reduce_max(x), max_value)), [x])
+
+
+def mixlogistic_invcdf(inputs, prior_logits, means, logs, tol=1e-10, max_iters=500, name="mixlogistic_invcdf"):
+    with tf.variable_scope(name):
+        with tf.control_dependencies([assert_in_range(inputs, 0., 1.)]):
+            y = tf.identity(inputs)
+
+        def body(x, lb, ub, _last_diff):
+            cur_y = tf.exp(mixlogistic_logcdf(x, prior_logits, means, logs))
+            gt = tf.cast(tf.greater(cur_y, y), dtype=y.dtype)
+            lt = 1. - gt
+            new_x = gt * (x + lb) / 2. + lt * (x + ub) / 2.
+            new_lb = gt * lb + lt * x
+            new_ub = gt * x + lt * ub
+            diff = tf.reduce_max(tf.abs(new_x - x))
+            return new_x, new_lb, new_ub, diff
+
+        init_x = tf.zeros_like(y)
+        max_scale = tf.reduce_sum(tf.exp(logs), axis=-1, keepdims=True)
+        init_lb = tf.reduce_min(means - 50 * max_scale, axis=-1)
+        init_ub = tf.reduce_min(means + 50 * max_scale, axis=-1)
+        init_diff = tf.constant(np.inf, dtype=y.dtype)
+
+        out_x, _, _, _ = tf.while_loop(cond=lambda _x, _lb, _ub, last_diff: last_diff > tol,
+                                       body=body, loop_vars=(init_x, init_lb, init_ub, init_diff),
+                                       back_prop=False, maximum_iterations=max_iters)
+        return out_x
+
