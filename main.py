@@ -12,10 +12,12 @@ import graphics
 class ResultLogger(object):
     def __init__(self, path):
         self.log_fd = open(path, 'w')
-        self.log_fd.write("epoch,loss,bits_x,bits_y,l2_loss\n")
+        self.log_fd.write("epoch,step,loss,bits_x,bits_y,l2_loss\n")
 
-    def write(self, epoch, results):
+    def write(self, epoch, results, step=None):
         string = "{:d}".format(epoch)
+        if step is not None:
+            string +=",{:d}".format(step)
         for i in range(len(results)):
             string += ",{:.4f}".format(results[i])
         string += "\n"
@@ -160,9 +162,21 @@ def train(model, dataloader, sess, hps):
                 visualize(epoch)
                 model.save(sess, log_path, epoch, step)
 
+            if step % hps.valid_per_steps == 0 and hps.valid_per_steps > 0:
+                dataloader.initialize(sess, test_iterator)
+                test_results = []
+                while True:
+                    try:
+                        stats = sess.run(global_stats, feed_dict={dataloader.handle:test_handle})
+                        test_results.append(stats)
+                    except tf.errors.OutOfRangeError:
+                        break
+                test_results = np.nanmean(test_results, axis=0)
+                test_logger.write(epoch, test_results, step=step)
+
         except tf.errors.OutOfRangeError:
             results = np.nanmean(results, axis=0)
-            train_logger.write(epoch, results)
+            train_logger.write(epoch, results, step=step)
             visualize(epoch)
 
             if epoch % hps.test_per_epochs == 0 and hps.test_per_epochs > 0:
@@ -175,7 +189,7 @@ def train(model, dataloader, sess, hps):
                     except tf.errors.OutOfRangeError:
                         break
                 test_results = np.nanmean(test_results, axis=0)
-                test_logger.write(epoch, test_results)
+                test_logger.write(epoch, test_results, step=step)
                 if test_results[0] < test_loss_best:
                     model.test_saver.save(sess, os.path.join(hps.results_dir, "logs", "model_best_loss"))
                     test_loss_best = test_results[0]
@@ -259,6 +273,8 @@ def get_arguments():
                         help="Print training status to screen per steps. Set to <=0 int to switch off")
     parser.add_argument("--test_per_epochs", type=int, default=1,
                         help="Test model per epochs")
+    parser.add_argument("--valid_per_steps", type=int, default=3000,
+                        help="Evaluation per steps")
     parser.add_argument("--steps_train_sum", type=int, default=10000,
                         help="Summary training per steps")
     parser.add_argument("--buffer_size", type=int, default=50000,
@@ -267,7 +283,7 @@ def get_arguments():
 
     # Dataset and dataloader
     parser.add_argument("--problem", type=str, default='cifar10',
-                        help="Dataset to use (mnist/cifar10/celeba/imagenet32x32/imagenet64x64)")
+                        help="Dataset to use (mnist/cifar10/celeba/imagenet32x32/imagenet64x64/lsun)")
     parser.add_argument("--data_dir", type=str, default=None,
                         help="Directory of tfrecord data")
     parser.add_argument("--threads_fmap", type=int, default=2,
